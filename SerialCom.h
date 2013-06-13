@@ -76,18 +76,45 @@ void readSerialCommand() {
 			break;
 
 		case 'M': // Read Motor Values
-			M1.writeMicroseconds(readIntegerSerial()); //motor1
-			readIntegerSerial(); //motor2
-			readIntegerSerial(); //motor3
-			readIntegerSerial(); //motor4
+                        if(ARMED)
+                        {
+			  M1.writeMicroseconds(readIntegerSerial()); //motor1
+			  M2.writeMicroseconds(readIntegerSerial()); //motor2
+			  M3.writeMicroseconds(readIntegerSerial()); //motor3
+			  M4.writeMicroseconds(readIntegerSerial()); //motor4
+                        }else
+                        {
+                          readIntegerSerial();
+                          readIntegerSerial();
+                          readIntegerSerial();
+                          readIntegerSerial();
+                          Serial.println("Motor NOT ARMED");
+                        }
 			break;
 
+                case 'A': //ARM or disarm Motor
+                        if(readIntegerSerial())// if == 1 we ARMED it
+                        {
+                          ARMED = true;
+                          Serial.println(1);
+                        }else{
+                          ARMED = false;
+                          M1.write(armValue); 
+	                  M2.write(armValue); 
+	                  M3.write(armValue); 
+	                  M4.write(armValue);
+                          Serial.println(0);
+                        }
+                        break;
+/*
 		case 'N': // Read Motor Values
 			M1.write(readIntegerSerial()); //motor1
 			readIntegerSerial(); //motor2
 			readIntegerSerial(); //motor3
 			readIntegerSerial(); //motor4
 			break;
+
+*/
 
 		}
 	}

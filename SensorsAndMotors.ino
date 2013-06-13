@@ -30,6 +30,7 @@ Servo M1;
 Servo M2;
 Servo M3;
 Servo M4;
+boolean ARMED = false;
 
 #include "SerialCom.h"
 
@@ -56,33 +57,48 @@ void measureCriticalSensors() {
 
 void setup()
 {
+        pinMode(13, OUTPUT);
+        digitalWrite(13, HIGH);
 	Serial.begin(BAUD);
 	while (!Serial) {
 		; // wait for serial port to connect. Needed for Leonardo only
 	}
+
+        Serial.println("INIT");
+
+        Serial.println("init motor");
 	M1.attach(5);
 	M2.attach(6);
 	M3.attach(9);
 	M4.attach(10);
 
+        Serial.println("arm motor");
 	M1.write(armValue); 
 	M2.write(armValue); 
 	M3.write(armValue); 
-	M4.write(armValue); 
+	M4.write(armValue);
+
 	initPlatform();
 	initializePlatformSpecificAccelCalibration();
 
 	// Initialize sensors
 	// If sensors have a common initialization routine
 	// insert it into the gyro class because it executes first
+
+        Serial.println("init and calibrate Gyro");
 	initializeGyro(); // defined in Gyro.h
 	while (!calibrateGyro()); // this make sure the craft is still befor to continue init process
+
+        Serial.println("init and calibrate Accel");
 	initializeAccel(); // defined in Accel.h
 	computeAccelBias();
 	setupFourthOrder();
 
 	initializeKinematics();
 	/* add setup code here */
+        
+        Serial.println("OK");
+        digitalWrite(13,LOW);
 
 }
 void process100HzTask() {
@@ -98,8 +114,6 @@ void process100HzTask() {
 	}
 
 	calculateKinematics(gyroRate[XAXIS], gyroRate[YAXIS], gyroRate[ZAXIS], filteredAccel[XAXIS], filteredAccel[YAXIS], filteredAccel[ZAXIS], G_Dt);
-
-	sendSerialTelemetry();
 }
 void process50HzTask() {
 
@@ -114,6 +128,7 @@ void process50HzTask() {
 	//}
 	//Serial.println();
 	readSerialCommand();
+        sendSerialTelemetry();
 }
 void process10HzTask()
 {
