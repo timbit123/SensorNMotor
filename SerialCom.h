@@ -30,6 +30,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #define _AQ_SERIAL_COMM_
 
 char queryType = 'X';
+char queryTypeTemp = 'X';
 
 void initCommunication() {
 	// do nothing here for now
@@ -70,25 +71,32 @@ void initCommunication() {
 void readSerialCommand() {
 	// Check for serial message
 	if (Serial.available()) {
-		queryType = Serial.read();
-		switch (queryType) {
+		queryTypeTemp = Serial.read();
+                if(queryTypeTemp > 'Z')
+                {
+                  queryType = queryTypeTemp;
+                  return;
+                }
+		switch (queryTypeTemp) {
 		case 'X': // Stop sending messages
 			break;
 
 		case 'M': // Read Motor Values
                         if(ARMED)
                         {
-			  M1.writeMicroseconds(readIntegerSerial()); //motor1
-			  M2.writeMicroseconds(readIntegerSerial()); //motor2
-			  M3.writeMicroseconds(readIntegerSerial()); //motor3
-			  M4.writeMicroseconds(readIntegerSerial()); //motor4
+                          motorCommand[MOTOR1] = readIntegerSerial();
+                          motorCommand[MOTOR2] = readIntegerSerial();
+                          motorCommand[MOTOR3] = readIntegerSerial();
+                          motorCommand[MOTOR4] = readIntegerSerial();
+                          writeMotors(); 
                         }else
                         {
                           readIntegerSerial();
                           readIntegerSerial();
                           readIntegerSerial();
                           readIntegerSerial();
-                          Serial.println("Motor NOT ARMED");
+                          //Start with M for motor message with message so MMotor NOT ARMED
+                          Serial.println("MMotor NOT ARMED");
                         }
 			break;
 
@@ -96,15 +104,27 @@ void readSerialCommand() {
                         if(readIntegerSerial())// if == 1 we ARMED it
                         {
                           ARMED = true;
-                          Serial.println(1);
+                          pulseMotors(2);
+                          Serial.println("A1");
                         }else{
                           ARMED = false;
-                          M1.write(armValue); 
-	                  M2.write(armValue); 
-	                  M3.write(armValue); 
-	                  M4.write(armValue);
-                          Serial.println(0);
+						  motorCommand[MOTOR1] = MINCOMMAND;
+                          motorCommand[MOTOR2] = MINCOMMAND;
+                          motorCommand[MOTOR3] = MINCOMMAND;
+                          motorCommand[MOTOR4] = MINCOMMAND;
+                          writeMotors();
+                          Serial.println("A0");
                         }
+                        break;
+                case 'C': //Calibrate Sensors
+                        calibrateGyro();
+                        computeAccelBias();
+                        calibrateKinematics();
+                        pulseMotors(3);
+                        break;
+                        
+                case 'P': //PulseTest
+                        pulseMotors(readIntegerSerial());
                         break;
 /*
 		case 'N': // Read Motor Values
@@ -189,6 +209,7 @@ void sendSerialTelemetry() {
 
 
 	case 'i': // Send sensor data (Main information to use!)
+                Serial.print('i');
 		for (byte axis = XAXIS; axis <= ZAXIS; axis++) {
 			PrintValueComma(gyroRate[axis]);
 		}
